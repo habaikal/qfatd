@@ -21,9 +21,11 @@ import {
   Power,
   ChevronRight,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  History
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line } from 'recharts';
 import GlassCard from './components/GlassCard';
 import StatusBadge from './components/StatusBadge';
 import { AlgorithmStatus, TradingAlgorithm, PortfolioHistory, LogEntry, BrokerConnection, StrategyConfig } from './types';
@@ -61,6 +63,31 @@ const PORTFOLIO_DATA: PortfolioHistory[] = [
 
 const AVAILABLE_INDICATORS = ['RSI', 'MACD', 'VWAP', 'EMA20', 'EMA50', 'SMA200', 'Bollinger Bands', 'ATR', 'Ichimoku', 'Stochastic'];
 
+const MOCK_BACKTEST_RESULTS = {
+  equityCurve: [
+    { month: 'Jan', value: 10000 },
+    { month: 'Feb', value: 10800 },
+    { month: 'Mar', value: 10200 },
+    { month: 'Apr', value: 12100 },
+    { month: 'May', value: 11800 },
+    { month: 'Jun', value: 13500 },
+    { month: 'Jul', value: 15200 },
+    { month: 'Aug', value: 14700 },
+    { month: 'Sep', value: 16900 },
+    { month: 'Oct', value: 17500 },
+    { month: 'Nov', value: 19100 },
+    { month: 'Dec', value: 21500 },
+  ],
+  metrics: {
+    totalReturn: '+115.0%',
+    cagr: '124.5%',
+    maxDrawdown: '-12.8%',
+    sharpeRatio: '2.4',
+    winRate: '68.2%',
+    profitFactor: '2.15'
+  }
+};
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [algorithms, setAlgorithms] = useState<TradingAlgorithm[]>(INITIAL_ALGORITHMS);
@@ -69,6 +96,10 @@ const App: React.FC = () => {
   const [aiInsight, setAiInsight] = useState<string>('Initializing AI analysis...');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddingBot, setIsAddingBot] = useState(false);
+
+  // Backtest State
+  const [isBacktesting, setIsBacktesting] = useState(false);
+  const [showBacktestResults, setShowBacktestResults] = useState(false);
 
   // Custom Bot Form State
   const [newBotConfig, setNewBotConfig] = useState<{
@@ -220,6 +251,16 @@ const App: React.FC = () => {
     const insight = await getMarketAnalysis(PORTFOLIO_DATA, { algorithms, totalProfit, brokerStatus: broker.status });
     setAiInsight(insight || 'Unable to fetch insight.');
     setIsRefreshing(false);
+  };
+
+  const handleRunBacktest = () => {
+    setIsBacktesting(true);
+    addLog(`Initiating historical backtest engine for algorithm ID: ${selectedAlgId}...`, 'INFO');
+    setTimeout(() => {
+      setIsBacktesting(false);
+      setShowBacktestResults(true);
+      addLog(`Backtest simulation completed. Visualizing results.`, 'SUCCESS');
+    }, 2000);
   };
 
   useEffect(() => {
@@ -577,7 +618,15 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-white/10 flex justify-end">
+                    <div className="mt-8 pt-6 border-t border-white/10 flex justify-between gap-4">
+                      <button
+                        onClick={handleRunBacktest}
+                        disabled={isBacktesting}
+                        className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-bold py-2 px-6 rounded-xl transition-all border border-indigo-500/30 flex items-center gap-2"
+                      >
+                        {isBacktesting ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <History className="w-4 h-4" />}
+                        {isBacktesting ? 'Running Simulation...' : 'Run Backtest'}
+                      </button>
                       <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-xl transition-all shadow-lg shadow-blue-600/20">
                         Apply Changes to Live Bot
                       </button>
@@ -971,6 +1020,101 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Backtest Results Modal */}
+      {showBacktestResults && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <GlassCard
+              title="Simulation Terminal"
+              className="border-indigo-500/30 bg-slate-900/90 shadow-2xl shadow-indigo-500/20"
+              action={
+                <button
+                  onClick={() => setShowBacktestResults(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              }
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white tracking-tight">{selectedAlgorithm?.name} - Historical Backtest</h3>
+                    <p className="text-sm text-indigo-400 flex items-center gap-2 mt-1">
+                      <History className="w-4 h-4" /> Period: 2025 Jan 01 - 2025 Dec 31 (1 Year)
+                    </p>
+                  </div>
+                  <StatusBadge status={AlgorithmStatus.STOPPED} />
+                </div>
+
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                  {[
+                    { label: 'Total Return', value: MOCK_BACKTEST_RESULTS.metrics.totalReturn, highlight: 'text-emerald-400' },
+                    { label: 'CAGR', value: MOCK_BACKTEST_RESULTS.metrics.cagr, highlight: 'text-white' },
+                    { label: 'Max Drawdown', value: MOCK_BACKTEST_RESULTS.metrics.maxDrawdown, highlight: 'text-rose-400' },
+                    { label: 'Sharpe Ratio', value: MOCK_BACKTEST_RESULTS.metrics.sharpeRatio, highlight: 'text-indigo-400' },
+                    { label: 'Win Rate', value: MOCK_BACKTEST_RESULTS.metrics.winRate, highlight: 'text-white' },
+                    { label: 'Profit Factor', value: MOCK_BACKTEST_RESULTS.metrics.profitFactor, highlight: 'text-white' },
+                  ].map((metric, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">{metric.label}</span>
+                      <span className={`text-xl font-bold ${metric.highlight}`}>{metric.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Equity Curve Chart */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <h4 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-indigo-400" /> Projected Equity Curve
+                  </h4>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={MOCK_BACKTEST_RESULTS.equityCurve}>
+                        <defs>
+                          <linearGradient id="colorCurve" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val / 1000}k`} domain={['auto', 'auto']} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '12px' }}
+                          itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                          formatter={(value) => [`$${value}`, 'Equity']}
+                        />
+                        <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorCurve)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-4 mt-6">
+                  <button
+                    onClick={() => setShowBacktestResults(false)}
+                    className="px-6 py-2 rounded-xl border border-white/10 text-white hover:bg-white/10 font-bold transition-all"
+                  >
+                    Close Report
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBacktestResults(false);
+                      addLog(`Strategy ${selectedAlgorithm?.name} successfully deployed to Live Execution Engine.`, 'SUCCESS');
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20"
+                  >
+                    Deploy to Live Account
+                  </button>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
