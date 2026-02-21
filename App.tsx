@@ -254,8 +254,8 @@ const App: React.FC = () => {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${activeTab === item.id
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
             >
               <item.icon className="w-6 h-6 shrink-0" />
@@ -389,8 +389,8 @@ const App: React.FC = () => {
                     <button
                       onClick={() => toggleAlgorithm(alg.id)}
                       className={`p-2 rounded-lg transition-all ${alg.status === AlgorithmStatus.RUNNING
-                          ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
-                          : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                        ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                        : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
                         }`}
                     >
                       {alg.status === AlgorithmStatus.RUNNING ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
@@ -405,7 +405,7 @@ const App: React.FC = () => {
                 {logs.map(log => (
                   <div key={log.id} className="flex gap-2 text-[11px] border-b border-white/5 pb-2 last:border-0">
                     <span className={`font-bold uppercase ${log.type === 'API' ? 'text-blue-400' :
-                        log.type === 'SUCCESS' ? 'text-emerald-400' : 'text-slate-400'
+                      log.type === 'SUCCESS' ? 'text-emerald-400' : 'text-slate-400'
                       }`}>{log.type}</span>
                     <span className="text-slate-300">{log.message}</span>
                   </div>
@@ -429,8 +429,8 @@ const App: React.FC = () => {
                         setIsAddingBot(false);
                       }}
                       className={`w-full text-left p-4 rounded-xl transition-all border flex items-center justify-between group ${(selectedAlgId === alg.id && !isAddingBot)
-                          ? 'bg-blue-600/20 border-blue-500/50 text-white'
-                          : 'bg-white/5 border-transparent text-slate-400 hover:bg-white/10'
+                        ? 'bg-blue-600/20 border-blue-500/50 text-white'
+                        : 'bg-white/5 border-transparent text-slate-400 hover:bg-white/10'
                         }`}
                     >
                       <div>
@@ -446,11 +446,12 @@ const App: React.FC = () => {
                 title="Add Strategy"
                 className={`flex items-center justify-center py-10 transition-all cursor-pointer border ${isAddingBot ? 'bg-blue-600/20 border-blue-500/50 text-white opacity-100' : 'opacity-60 hover:opacity-100 border-transparent bg-white/5'
                   }`}
+                onClick={() => {
+                  setSelectedAlgId(null);
+                  setIsAddingBot(true);
+                }}
               >
-                <div
-                  className="flex flex-col items-center w-full"
-                  onClick={() => setIsAddingBot(true)}
-                >
+                <div className="flex flex-col items-center w-full">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${isAddingBot ? 'bg-blue-500/20' : 'bg-white/10'}`}>
                     <Bot className={`w-6 h-6 ${isAddingBot ? 'text-blue-400' : 'text-slate-400'}`} />
                   </div>
@@ -554,8 +555,8 @@ const App: React.FC = () => {
                                 key={indicator}
                                 onClick={() => toggleIndicator(indicator)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${active
-                                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                                  ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
                                   }`}
                               >
                                 {active && <CheckCircle2 className="w-3 h-3" />}
@@ -882,9 +883,9 @@ const App: React.FC = () => {
                 <div key={log.id} className="flex gap-4 border-b border-white/5 pb-2 last:border-0 hover:bg-white/5 p-1 rounded transition-colors">
                   <span className="text-slate-500 whitespace-nowrap">{log.timestamp}</span>
                   <span className={`font-bold w-20 shrink-0 ${log.type === 'API' ? 'text-blue-400' :
-                      log.type === 'SUCCESS' ? 'text-emerald-400' :
-                        log.type === 'ERROR' ? 'text-rose-400' :
-                          log.type === 'WARNING' ? 'text-amber-400' : 'text-slate-400'
+                    log.type === 'SUCCESS' ? 'text-emerald-400' :
+                      log.type === 'ERROR' ? 'text-rose-400' :
+                        log.type === 'WARNING' ? 'text-amber-400' : 'text-slate-400'
                     }`}>{log.type}</span>
                   <span className="text-slate-300 break-all">{log.message}</span>
                 </div>
