@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  TrendingUp, 
-  Activity, 
-  Settings, 
-  Terminal, 
-  Play, 
-  Square, 
+import {
+  TrendingUp,
+  Activity,
+  Settings,
+  Terminal,
+  Play,
+  Square,
   RefreshCcw,
   Zap,
   BarChart3,
@@ -30,19 +30,19 @@ import { AlgorithmStatus, TradingAlgorithm, PortfolioHistory, LogEntry, BrokerCo
 import { getMarketAnalysis } from './services/geminiService';
 
 const INITIAL_ALGORITHMS: TradingAlgorithm[] = [
-  { 
+  {
     id: '1', name: 'Alpha Arbitrage', strategyType: 'Arbitrage', status: AlgorithmStatus.RUNNING, profit: 12.5, winRate: 72, tradesCount: 142, lastExecution: '2 mins ago',
     config: { riskTolerance: 30, leverage: 1, stopLoss: 2, takeProfit: 5, indicators: ['RSI', 'VWAP'], maxDrawdown: 10 }
   },
-  { 
+  {
     id: '2', name: 'Momentum Scalper', strategyType: 'Scalping', status: AlgorithmStatus.RUNNING, profit: 4.8, winRate: 64, tradesCount: 89, lastExecution: '1 min ago',
     config: { riskTolerance: 80, leverage: 5, stopLoss: 0.5, takeProfit: 1.5, indicators: ['EMA20', 'MACD'], maxDrawdown: 15 }
   },
-  { 
+  {
     id: '3', name: 'RSI Reversion', strategyType: 'Mean Reversion', status: AlgorithmStatus.STOPPED, profit: -1.2, winRate: 48, tradesCount: 56, lastExecution: '2 days ago',
     config: { riskTolerance: 50, leverage: 2, stopLoss: 3, takeProfit: 10, indicators: ['RSI', 'Bollinger'], maxDrawdown: 12 }
   },
-  { 
+  {
     id: '4', name: 'Grid Bot BTC', strategyType: 'Grid', status: AlgorithmStatus.RUNNING, profit: 22.1, winRate: 81, tradesCount: 312, lastExecution: 'Just now',
     config: { riskTolerance: 20, leverage: 1, stopLoss: 5, takeProfit: 20, indicators: ['ATR'], maxDrawdown: 25 }
   },
@@ -68,7 +68,29 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [aiInsight, setAiInsight] = useState<string>('Initializing AI analysis...');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+  const [isAddingBot, setIsAddingBot] = useState(false);
+
+  // Custom Bot Form State
+  const [newBotConfig, setNewBotConfig] = useState<{
+    name: string;
+    strategyType: string;
+    code: string;
+    riskTolerance: number;
+    leverage: number;
+    stopLoss: number;
+    takeProfit: number;
+    indicators: string[];
+  }>({
+    name: '',
+    strategyType: 'Custom Script',
+    code: '// Initialize your strategy logic here\nfunction onCandle(candle, indicators) {\n  // your trading rules\n}',
+    riskTolerance: 50,
+    leverage: 1,
+    stopLoss: 2,
+    takeProfit: 5,
+    indicators: ['RSI']
+  });
+
   const [broker, setBroker] = useState<BrokerConnection>({
     id: 'kis-01',
     name: 'Korea Investment',
@@ -79,9 +101,9 @@ const App: React.FC = () => {
     lastPing: '34ms'
   });
 
-  const selectedAlgorithm = useMemo(() => 
-    algorithms.find(a => a.id === selectedAlgId) || null, 
-  [algorithms, selectedAlgId]);
+  const selectedAlgorithm = useMemo(() =>
+    algorithms.find(a => a.id === selectedAlgId) || null,
+    [algorithms, selectedAlgId]);
 
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'INFO') => {
     const newLog: LogEntry = {
@@ -129,7 +151,7 @@ const App: React.FC = () => {
   const toggleIndicator = (indicator: string) => {
     if (!selectedAlgorithm) return;
     const current = selectedAlgorithm.config.indicators;
-    const next = current.includes(indicator) 
+    const next = current.includes(indicator)
       ? current.filter(i => i !== indicator)
       : [...current, indicator];
     updateConfig('indicators', next);
@@ -142,6 +164,54 @@ const App: React.FC = () => {
       setBroker(prev => ({ ...prev, status: 'CONNECTED', lastPing: '28ms' }));
       addLog(`${broker.name} API connection re-established successfully.`, 'SUCCESS');
     }, 2000);
+  };
+
+  const handleCreateBot = () => {
+    if (!newBotConfig.name.trim()) {
+      addLog('Bot creation failed: Name is required', 'ERROR');
+      return;
+    }
+
+    addLog(`Compiling custom strategy script for ${newBotConfig.name}...`, 'INFO');
+
+    // Simulate compilation
+    setTimeout(() => {
+      const newBot: TradingAlgorithm = {
+        id: `custom-${Math.random().toString(36).substr(2, 6)}`,
+        name: newBotConfig.name,
+        strategyType: newBotConfig.strategyType,
+        status: AlgorithmStatus.RUNNING,
+        profit: 0,
+        winRate: 0,
+        tradesCount: 0,
+        lastExecution: 'Waiting for signals',
+        config: {
+          riskTolerance: newBotConfig.riskTolerance,
+          leverage: newBotConfig.leverage,
+          stopLoss: newBotConfig.stopLoss,
+          takeProfit: newBotConfig.takeProfit,
+          indicators: newBotConfig.indicators,
+          maxDrawdown: 100
+        }
+      };
+
+      setAlgorithms(prev => [...prev, newBot]);
+      addLog(`${newBot.name} strategy compiled and deployed successfully.`, 'SUCCESS');
+      setSelectedAlgId(newBot.id);
+      setIsAddingBot(false);
+
+      // Reset form
+      setNewBotConfig({
+        name: '',
+        strategyType: 'Custom Script',
+        code: '// Initialize your strategy logic here\nfunction onCandle(candle, indicators) {\n  // your trading rules\n}',
+        riskTolerance: 50,
+        leverage: 1,
+        stopLoss: 2,
+        takeProfit: 5,
+        indicators: ['RSI']
+      });
+    }, 800);
   };
 
   const refreshInsights = async () => {
@@ -183,11 +253,10 @@ const App: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${
-                activeTab === item.id 
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
+              className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${activeTab === item.id
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
             >
               <item.icon className="w-6 h-6 shrink-0" />
               <span className="hidden md:block font-medium">{item.label}</span>
@@ -225,7 +294,7 @@ const App: React.FC = () => {
               <TrendingUp className="text-emerald-400 w-5 h-5" />
               <div>
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Account Balance</p>
-                <p className="text-sm font-bold text-white">${PORTFOLIO_DATA[PORTFOLIO_DATA.length-1].balance.toLocaleString()}</p>
+                <p className="text-sm font-bold text-white">${PORTFOLIO_DATA[PORTFOLIO_DATA.length - 1].balance.toLocaleString()}</p>
               </div>
             </div>
             <div className="glass px-4 py-2 rounded-xl flex items-center gap-3 border-emerald-500/20">
@@ -246,14 +315,14 @@ const App: React.FC = () => {
                   <AreaChart data={PORTFOLIO_DATA}>
                     <defs>
                       <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                     <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
-                    <Tooltip 
+                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val / 1000}k`} />
+                    <Tooltip
                       contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                       itemStyle={{ color: '#fff' }}
                     />
@@ -263,11 +332,11 @@ const App: React.FC = () => {
               </div>
             </GlassCard>
 
-            <GlassCard 
-              className="lg:col-span-1 border-blue-500/20" 
+            <GlassCard
+              className="lg:col-span-1 border-blue-500/20"
               title="QuantAI Advisor"
               action={
-                <button 
+                <button
                   onClick={refreshInsights}
                   disabled={isRefreshing}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -317,13 +386,12 @@ const App: React.FC = () => {
                       <span className="text-[10px] text-slate-400 uppercase font-bold">Bot Control</span>
                       <span className="text-xs">Linked to {broker.name} API</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => toggleAlgorithm(alg.id)}
-                      className={`p-2 rounded-lg transition-all ${
-                        alg.status === AlgorithmStatus.RUNNING 
-                        ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30' 
-                        : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                      }`}
+                      className={`p-2 rounded-lg transition-all ${alg.status === AlgorithmStatus.RUNNING
+                          ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                          : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                        }`}
                     >
                       {alg.status === AlgorithmStatus.RUNNING ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
                     </button>
@@ -336,10 +404,9 @@ const App: React.FC = () => {
               <div className="space-y-3 h-[280px] overflow-y-auto pr-2 custom-scrollbar">
                 {logs.map(log => (
                   <div key={log.id} className="flex gap-2 text-[11px] border-b border-white/5 pb-2 last:border-0">
-                    <span className={`font-bold uppercase ${
-                      log.type === 'API' ? 'text-blue-400' : 
-                      log.type === 'SUCCESS' ? 'text-emerald-400' : 'text-slate-400'
-                    }`}>{log.type}</span>
+                    <span className={`font-bold uppercase ${log.type === 'API' ? 'text-blue-400' :
+                        log.type === 'SUCCESS' ? 'text-emerald-400' : 'text-slate-400'
+                      }`}>{log.type}</span>
                     <span className="text-slate-300">{log.message}</span>
                   </div>
                 ))}
@@ -357,12 +424,14 @@ const App: React.FC = () => {
                   {algorithms.map(alg => (
                     <button
                       key={alg.id}
-                      onClick={() => setSelectedAlgId(alg.id)}
-                      className={`w-full text-left p-4 rounded-xl transition-all border flex items-center justify-between group ${
-                        selectedAlgId === alg.id 
-                        ? 'bg-blue-600/20 border-blue-500/50 text-white' 
-                        : 'bg-white/5 border-transparent text-slate-400 hover:bg-white/10'
-                      }`}
+                      onClick={() => {
+                        setSelectedAlgId(alg.id);
+                        setIsAddingBot(false);
+                      }}
+                      className={`w-full text-left p-4 rounded-xl transition-all border flex items-center justify-between group ${(selectedAlgId === alg.id && !isAddingBot)
+                          ? 'bg-blue-600/20 border-blue-500/50 text-white'
+                          : 'bg-white/5 border-transparent text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <div>
                         <p className="font-bold text-sm">{alg.name}</p>
@@ -373,12 +442,19 @@ const App: React.FC = () => {
                   ))}
                 </div>
               </GlassCard>
-              <GlassCard title="Add Strategy" className="flex items-center justify-center py-10 opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-2">
-                    <Bot className="w-6 h-6 text-slate-400" />
+              <GlassCard
+                title="Add Strategy"
+                className={`flex items-center justify-center py-10 transition-all cursor-pointer border ${isAddingBot ? 'bg-blue-600/20 border-blue-500/50 text-white opacity-100' : 'opacity-60 hover:opacity-100 border-transparent bg-white/5'
+                  }`}
+              >
+                <div
+                  className="flex flex-col items-center w-full"
+                  onClick={() => setIsAddingBot(true)}
+                >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${isAddingBot ? 'bg-blue-500/20' : 'bg-white/10'}`}>
+                    <Bot className={`w-6 h-6 ${isAddingBot ? 'text-blue-400' : 'text-slate-400'}`} />
                   </div>
-                  <span className="text-sm font-bold">New Custom Bot</span>
+                  <span className={`text-sm font-bold ${isAddingBot ? 'text-blue-400' : ''}`}>New Custom Bot</span>
                 </div>
               </GlassCard>
             </div>
@@ -387,12 +463,12 @@ const App: React.FC = () => {
             <div className="lg:col-span-8 space-y-6">
               {selectedAlgorithm ? (
                 <>
-                  <GlassCard 
+                  <GlassCard
                     title={`${selectedAlgorithm.name} Configuration`}
                     action={
                       <div className="flex gap-2">
                         <StatusBadge status={selectedAlgorithm.status} />
-                        <button 
+                        <button
                           onClick={() => toggleAlgorithm(selectedAlgorithm.id)}
                           className={`p-2 rounded-lg ${selectedAlgorithm.status === AlgorithmStatus.RUNNING ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}
                         >
@@ -407,37 +483,37 @@ const App: React.FC = () => {
                         <h4 className="flex items-center gap-2 text-sm font-bold text-blue-400 uppercase tracking-widest">
                           <Sliders className="w-4 h-4" /> Risk Management
                         </h4>
-                        
+
                         <div className="space-y-2">
                           <div className="flex justify-between text-xs font-semibold">
                             <span className="text-slate-400">Risk Tolerance</span>
                             <span className="text-white">{selectedAlgorithm.config.riskTolerance}%</span>
                           </div>
-                          <input 
-                            type="range" min="1" max="100" 
+                          <input
+                            type="range" min="1" max="100"
                             value={selectedAlgorithm.config.riskTolerance}
                             onChange={(e) => updateConfig('riskTolerance', parseInt(e.target.value))}
-                            className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500" 
+                            className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <label className="text-[10px] text-slate-400 font-bold uppercase">Leverage (x)</label>
-                            <input 
-                              type="number" 
+                            <input
+                              type="number"
                               value={selectedAlgorithm.config.leverage}
                               onChange={(e) => updateConfig('leverage', parseFloat(e.target.value))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" 
+                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                             />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] text-slate-400 font-bold uppercase">Max Drawdown (%)</label>
-                            <input 
-                              type="number" 
+                            <input
+                              type="number"
                               value={selectedAlgorithm.config.maxDrawdown}
                               onChange={(e) => updateConfig('maxDrawdown', parseFloat(e.target.value))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" 
+                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                             />
                           </div>
                         </div>
@@ -445,20 +521,20 @@ const App: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <label className="text-[10px] text-slate-400 font-bold uppercase">Stop Loss (%)</label>
-                            <input 
+                            <input
                               type="number" step="0.1"
                               value={selectedAlgorithm.config.stopLoss}
                               onChange={(e) => updateConfig('stopLoss', parseFloat(e.target.value))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" 
+                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                             />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] text-slate-400 font-bold uppercase">Take Profit (%)</label>
-                            <input 
+                            <input
                               type="number" step="0.1"
                               value={selectedAlgorithm.config.takeProfit}
                               onChange={(e) => updateConfig('takeProfit', parseFloat(e.target.value))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" 
+                              className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                             />
                           </div>
                         </div>
@@ -469,7 +545,7 @@ const App: React.FC = () => {
                         <h4 className="flex items-center gap-2 text-sm font-bold text-indigo-400 uppercase tracking-widest">
                           <Activity className="w-4 h-4" /> Signal Indicators
                         </h4>
-                        
+
                         <div className="flex flex-wrap gap-2">
                           {AVAILABLE_INDICATORS.map(indicator => {
                             const active = selectedAlgorithm.config.indicators.includes(indicator);
@@ -477,11 +553,10 @@ const App: React.FC = () => {
                               <button
                                 key={indicator}
                                 onClick={() => toggleIndicator(indicator)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${
-                                  active 
-                                  ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
-                                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
-                                }`}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${active
+                                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                                  }`}
                               >
                                 {active && <CheckCircle2 className="w-3 h-3" />}
                                 {indicator}
@@ -508,32 +583,135 @@ const App: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <GlassCard title="Recent Performance">
-                       <div className="flex items-end gap-2 h-24">
-                          {[60, 40, 70, 90, 50, 80, 45].map((h, i) => (
-                            <div key={i} className="flex-1 bg-blue-500/20 rounded-t-sm relative group">
-                              <div 
-                                className="absolute bottom-0 left-0 right-0 bg-blue-500/60 rounded-t-sm transition-all" 
-                                style={{ height: `${h}%` }}
-                              ></div>
-                            </div>
-                          ))}
-                       </div>
-                       <p className="text-center text-[10px] text-slate-500 mt-2 uppercase font-bold tracking-widest">7-Day Profit Distribution</p>
+                      <div className="flex items-end gap-2 h-24">
+                        {[60, 40, 70, 90, 50, 80, 45].map((h, i) => (
+                          <div key={i} className="flex-1 bg-blue-500/20 rounded-t-sm relative group">
+                            <div
+                              className="absolute bottom-0 left-0 right-0 bg-blue-500/60 rounded-t-sm transition-all"
+                              style={{ height: `${h}%` }}
+                            ></div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-center text-[10px] text-slate-500 mt-2 uppercase font-bold tracking-widest">7-Day Profit Distribution</p>
                     </GlassCard>
                     <GlassCard title="Safety Guard">
-                       <div className="space-y-4">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-slate-400">Trading Window</span>
-                            <span className="text-white font-mono">24/7 (Global)</span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-slate-400">Safety Multiplier</span>
-                            <span className="text-emerald-400 font-bold">ACTIVE (1.2x)</span>
-                          </div>
-                       </div>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-400">Trading Window</span>
+                          <span className="text-white font-mono">24/7 (Global)</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-400">Safety Multiplier</span>
+                          <span className="text-emerald-400 font-bold">ACTIVE (1.2x)</span>
+                        </div>
+                      </div>
                     </GlassCard>
                   </div>
                 </>
+              ) : isAddingBot ? (
+                <GlassCard title="Custom Strategy Editor" className="animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Bot Context Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. BTC Breakout Scalper"
+                          value={newBotConfig.name}
+                          onChange={(e) => setNewBotConfig(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Algorithm Type</label>
+                        <select
+                          value={newBotConfig.strategyType}
+                          onChange={(e) => setNewBotConfig(prev => ({ ...prev, strategyType: e.target.value }))}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option>Custom Script</option>
+                          <option>Trend Following</option>
+                          <option>Mean Reversion</option>
+                          <option>Statistical Arbitrage</option>
+                          <option>Machine Learning (Grid)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="flex items-center gap-2 text-sm font-bold text-indigo-400 uppercase tracking-widest mb-3 mt-4">
+                        <Terminal className="w-4 h-4" /> Strategy Logic (JavaScript)
+                      </h4>
+                      <div className="border border-white/10 rounded-xl overflow-hidden shadow-inner bg-[#1e1e1e]">
+                        <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex gap-2">
+                          <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        </div>
+                        <textarea
+                          value={newBotConfig.code}
+                          onChange={(e) => setNewBotConfig(prev => ({ ...prev, code: e.target.value }))}
+                          className="w-full h-48 bg-transparent p-4 text-emerald-300 font-mono text-sm focus:outline-none resize-y"
+                          spellCheck={false}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-white/10 rounded-xl p-4 bg-white/5">
+                      <h4 className="text-xs font-bold text-slate-400 mb-4 uppercase">Initial Risk Settings</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <label className="text-[10px] text-slate-500 block mb-1 font-bold">Leverage (x)</label>
+                          <input
+                            type="number" value={newBotConfig.leverage}
+                            onChange={(e) => setNewBotConfig(prev => ({ ...prev, leverage: parseInt(e.target.value) || 1 }))}
+                            className="bg-black/20 w-full p-2 rounded text-xs text-white border border-white/5 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 block mb-1 font-bold">Stop Loss (%)</label>
+                          <input
+                            type="number" value={newBotConfig.stopLoss}
+                            onChange={(e) => setNewBotConfig(prev => ({ ...prev, stopLoss: parseFloat(e.target.value) || 0 }))}
+                            className="bg-black/20 w-full p-2 rounded text-xs text-white border border-white/5 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 block mb-1 font-bold">Take Profit (%)</label>
+                          <input
+                            type="number" value={newBotConfig.takeProfit}
+                            onChange={(e) => setNewBotConfig(prev => ({ ...prev, takeProfit: parseFloat(e.target.value) || 0 }))}
+                            className="bg-black/20 w-full p-2 rounded text-xs text-white border border-white/5 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 block mb-1 font-bold">Risk Allocation (%)</label>
+                          <input
+                            type="number" value={newBotConfig.riskTolerance}
+                            onChange={(e) => setNewBotConfig(prev => ({ ...prev, riskTolerance: parseInt(e.target.value) || 0 }))}
+                            className="bg-black/20 w-full p-2 rounded text-xs text-white border border-white/5 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-4 pt-4 border-t border-white/10">
+                      <button
+                        onClick={() => setIsAddingBot(false)}
+                        className="px-6 py-3 rounded-xl transition-all border border-white/10 text-white hover:bg-white/10 font-bold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleCreateBot}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
+                      >
+                        <Play fill="currentColor" size={16} /> Compile & Deploy
+                      </button>
+                    </div>
+                  </div>
+                </GlassCard>
               ) : (
                 <GlassCard className="h-full flex flex-col items-center justify-center py-40">
                   <Bot className="w-16 h-16 text-slate-700 mb-4 animate-pulse" />
@@ -561,22 +739,22 @@ const App: React.FC = () => {
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2">API Key</label>
                     <div className="relative">
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         value={broker.apiKey}
                         readOnly
-                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white pr-10" 
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white pr-10"
                       />
                       <Key className="absolute right-3 top-3.5 w-4 h-4 text-slate-500" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Secret Key</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       value={broker.apiSecret}
                       readOnly
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
                     />
                   </div>
                 </div>
@@ -584,11 +762,11 @@ const App: React.FC = () => {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Account Number</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={broker.accountNumber}
                       readOnly
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
                     />
                   </div>
                   <div className="p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl">
@@ -600,7 +778,7 @@ const App: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex gap-4">
-                    <button 
+                    <button
                       onClick={handleConnectBroker}
                       className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
                     >
@@ -659,7 +837,7 @@ const App: React.FC = () => {
               <div className="text-3xl font-bold text-rose-400 mb-2">12.5%</div>
               <div className="text-sm text-slate-400 flex items-center gap-1">Optimal range</div>
             </GlassCard>
-            
+
             <GlassCard title="Monthly Performance" className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[400px]">
               <div className="h-[300px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
@@ -674,8 +852,8 @@ const App: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                     <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" />
                     <YAxis stroke="rgba(255,255,255,0.3)" tickFormatter={(val) => `$${val}`} />
-                    <Tooltip 
-                      cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                     />
                     <Bar dataKey="profit" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -703,12 +881,11 @@ const App: React.FC = () => {
               {logs.length > 0 ? logs.map(log => (
                 <div key={log.id} className="flex gap-4 border-b border-white/5 pb-2 last:border-0 hover:bg-white/5 p-1 rounded transition-colors">
                   <span className="text-slate-500 whitespace-nowrap">{log.timestamp}</span>
-                  <span className={`font-bold w-20 shrink-0 ${
-                    log.type === 'API' ? 'text-blue-400' : 
-                    log.type === 'SUCCESS' ? 'text-emerald-400' : 
-                    log.type === 'ERROR' ? 'text-rose-400' :
-                    log.type === 'WARNING' ? 'text-amber-400' : 'text-slate-400'
-                  }`}>{log.type}</span>
+                  <span className={`font-bold w-20 shrink-0 ${log.type === 'API' ? 'text-blue-400' :
+                      log.type === 'SUCCESS' ? 'text-emerald-400' :
+                        log.type === 'ERROR' ? 'text-rose-400' :
+                          log.type === 'WARNING' ? 'text-amber-400' : 'text-slate-400'
+                    }`}>{log.type}</span>
                   <span className="text-slate-300 break-all">{log.message}</span>
                 </div>
               )) : (
