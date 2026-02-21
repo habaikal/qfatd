@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = process.env.API_KEY || "DUMMY_API_KEY_FOR_DEMO";
+const ai = new GoogleGenAI({ apiKey });
 
 export const getMarketAnalysis = async (marketData: any, portfolio: any) => {
   const prompt = `Analyze current market data and portfolio state:
