@@ -644,7 +644,7 @@ const App: React.FC = () => {
 
                     <div>
                       <h4 className="flex items-center gap-2 text-sm font-bold text-indigo-400 uppercase tracking-widest mb-3 mt-4">
-                        <Terminal className="w-4 h-4" /> Strategy Logic (JavaScript)
+                        <Terminal className="w-4 h-4" /> Strategy Logic (Python / Pine Script)
                       </h4>
                       <div className="border border-white/10 rounded-xl overflow-hidden shadow-inner bg-[#1e1e1e]">
                         <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex gap-2">
