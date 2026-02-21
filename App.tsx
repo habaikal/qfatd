@@ -446,12 +446,14 @@ const App: React.FC = () => {
                 title="Add Strategy"
                 className={`flex items-center justify-center py-10 transition-all cursor-pointer border ${isAddingBot ? 'bg-blue-600/20 border-blue-500/50 text-white opacity-100' : 'opacity-60 hover:opacity-100 border-transparent bg-white/5'
                   }`}
-                onClick={() => {
-                  setSelectedAlgId(null);
-                  setIsAddingBot(true);
-                }}
               >
-                <div className="flex flex-col items-center w-full">
+                <div
+                  className="flex flex-col items-center w-full"
+                  onClick={() => {
+                    setSelectedAlgId('');
+                    setIsAddingBot(true);
+                  }}
+                >
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${isAddingBot ? 'bg-blue-500/20' : 'bg-white/10'}`}>
                     <Bot className={`w-6 h-6 ${isAddingBot ? 'text-blue-400' : 'text-slate-400'}`} />
                   </div>
