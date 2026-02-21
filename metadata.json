@@ -1,0 +1,7 @@
+{
+  "name": "QuantFlow AI - Auto-Trading Dashboard",
+  "description": "A futuristic, glassmorphism-inspired automated trading dashboard for managing quant algorithms and monitoring real-time performance with AI-powered insights.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
